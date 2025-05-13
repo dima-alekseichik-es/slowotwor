@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Ćwiczenie odmiany rzeczownika</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 2em;
+      background: linear-gradient(135deg, #cfd9df 0%, #e2ebf0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .card {
+      background: white;
+      padding: 2em 3em;
+      border-radius: 1em;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+    }
+    h2 {
+      color: #333;
+    }
+    label, input, button {
+      display: block;
+      width: 100%;
+      margin-top: 1em;
+    }
+    input {
+      padding: 0.8em;
+      font-size: 1em;
+      border: 2px solid #ddd;
+      border-radius: 0.5em;
+      transition: border-color 0.3s;
+    }
+    input:focus {
+      border-color: #007acc;
+      outline: none;
+    }
+    button {
+      padding: 0.8em;
+      font-size: 1em;
+      background-color: #007acc;
+      color: white;
+      border: none;
+      border-radius: 0.5em;
+      cursor: pointer;
+      margin-top: 1.5em;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    .result {
+      margin-top: 1.5em;
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Ćwiczenie odmiany rzeczownika</h2>
+    <div id="question"></div>
+    <input type="text" id="answer" placeholder="Wpisz poprawną formę">
+    <button onclick="checkAnswer()">Sprawdź</button>
+    <div class="result" id="result"></div>
+    <button onclick="nextQuestion()">Następne pytanie</button>
+  </div>
+
+  <script>
+    function parseQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      const word = params.get('word') || 'kucharz';
+      const gender = params.get('gender') || 'm1';
+
+      function parseDeclension(str) {
+        const result = {};
+        const entries = str?.split('|') || [];
+        for (const entry of entries) {
+          const [key, value] = entry.split(':');
+          if (!key || !value) continue;
+
+          const match = key.match(/([A-Za-z]+)(\.(depr|ndepr))?/);
+          if (!match) continue;
+
+          const baseCase = match[1];
+          const variant = match[3] || 'default';
+
+          if (!result[baseCase]) result[baseCase] = {};
+          result[baseCase][variant] = value;
+        }
+        return result;
+      }
+
+      const declSing = parseDeclension(params.get('decl'));
+      const declPlur = parseDeclension(params.get('declPlur'));
+
+      const declination = {};
+      const cases = new Set([...Object.keys(declSing), ...Object.keys(declPlur)]);
+
+      for (const c of cases) {
+        declination[c] = {
+          singular: declSing[c] || {},
+          plural: declPlur[c] || {}
+        };
+      }
+
+      return {
+        partOfSpeech: 'rzeczownik',
+        gender,
+        word,
+        declination
+      };
+    }
+
+    const data = parseQueryParams();
+
+    const cases = Object.keys(data.declination);
+    const numbers = ["singular", "plural"];
+    let currentCase = "";
+    let currentNumber = "";
+    let currentAnswer = "";
+    let currentWord = data.word;
+
+    function getRandomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function nextQuestion() {
+      const caseLabel = {
+        M: "Mianownik",
+        D: "Dopełniacz",
+        C: "Celownik",
+        B: "Biernik",
+        N: "Narzędnik",
+        Ms: "Miejscownik",
+        W: "Wołacz"
+      };
+
+      currentCase = getRandomItem(cases);
+      currentNumber = getRandomItem(numbers);
+
+      const formVariants = data.declination[currentCase]?.[currentNumber] || {};
+      currentAnswer = formVariants['depr'] || formVariants['ndepr'] || formVariants['default'] || Object.values(formVariants)[0] || "";
+
+      document.getElementById("question").innerText = 
+        `Podaj formę słowa "${currentWord}" w przypadku: ${caseLabel[currentCase]}, liczba: ${currentNumber === "singular" ? "pojedyncza" : "mnoga"}`;
+
+      document.getElementById("answer").value = "";
+      document.getElementById("result").innerText = "";
+    }
+
+    function checkAnswer() {
+      const userAnswer = document.getElementById("answer").value.trim().toLowerCase();
+      const correct = currentAnswer.toLowerCase();
+      const result = document.getElementById("result");
+      if (userAnswer === correct) {
+        result.innerText = "✅ Poprawnie!";
+        result.style.color = "green";
+      } else {
+        result.innerText = `❌ Niepoprawnie. Poprawna forma: ${currentAnswer}`;
+        result.style.color = "red";
+      }
+    }
+
+    nextQuestion();
+  </script>
+</body>
+</html>
